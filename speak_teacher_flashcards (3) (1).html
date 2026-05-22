@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Speak Teacher — BrainPOP Sales & CS Flashcard Deck</title>
+<link href="https://fonts.googleapis.com/css2?family=Proxima+Nova:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ── BrainPOP brand tokens ─────────────────────────────── */
+  :root {
+    --navy:       #1A3659;
+    --dark-navy:  #142038;
+    --teal:       #137996;
+    --sky:        #30B8D4;
+    --cream:      #FAF7F2;
+    --ice:        #EAF2F4;
+    --body:       #343A41;
+    --mid-gray:   #6B7280;
+    --border:     #D1D9E0;
+    --white:      #FFFFFF;
+
+    /* category accent colors */
+    --cat-instruction: #30B8D4;
+    --cat-assessment:  #8A7FD4;
+    --cat-curriculum:  #137996;
+    --cat-student:     #F5A623;
+    --cat-tech:        #E8622A;
+
+    --radius-card: 16px;
+    --radius-pill: 999px;
+    --shadow-card: 0 4px 20px rgba(20,32,56,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Proxima Nova', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: var(--ice);
+    color: var(--body);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px 60px;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 680px;
+  }
+
+  /* ── Header ──────────────────────────────────────────────── */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 32px;
+  }
+  .header-logo {
+    background: var(--navy);
+    border-radius: 12px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .header-logo svg { width: 30px; height: 30px; }
+  .header-text h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--navy);
+    letter-spacing: -0.3px;
+  }
+  .header-text p {
+    font-size: 13px;
+    color: var(--mid-gray);
+    margin-top: 2px;
+  }
+
+  /* ── Category filter pills ───────────────────────────────── */
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .filter-btn {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    border: 2px solid var(--border);
+    background: var(--white);
+    color: var(--mid-gray);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .filter-btn:hover { border-color: var(--teal); color: var(--teal); }
+  .filter-btn.active {
+    background: var(--navy);
+    border-color: var(--navy);
+    color: var(--white);
+  }
+
+  /* ── Score row ───────────────────────────────────────────── */
+  .score-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .score-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: var(--radius-pill);
+  }
+  .score-pill.got  { background: #E1F5EE; color: #0F6E56; }
+  .score-pill.learn { background: #FEF3E2; color: #92400E; }
+  .score-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .score-pill.got   .score-dot { background: #0F6E56; }
+  .score-pill.learn .score-dot { background: #D97706; }
+
+  /* ── Progress ────────────────────────────────────────────── */
+  .progress-wrap { margin-bottom: 6px; }
+  .progress-bar {
+    height: 5px;
+    background: var(--border);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--teal), var(--sky));
+    border-radius: var(--radius-pill);
+    transition: width 0.4s ease;
+  }
+  .progress-label {
+    font-size: 12px;
+    color: var(--mid-gray);
+    margin-top: 6px;
+    margin-bottom: 16px;
+  }
+
+  /* ── Flip hint ───────────────────────────────────────────── */
+  .flip-hint {
+    font-size: 12px;
+    color: var(--mid-gray);
+    text-align: center;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  /* ── Flashcard ───────────────────────────────────────────── */
+  .scene {
+    perspective: 1200px;
+    width: 100%;
+    height: 310px;
+    cursor: pointer;
+    margin-bottom: 14px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .card {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .card.flipped { transform: rotateY(180deg); }
+
+  .face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    background: var(--white);
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Front face */
+  .face-front {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border-top: 5px solid var(--navy);
+  }
+  .face-front .cat-tag {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+  }
+  .face-front .term {
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--navy);
+    line-height: 1.2;
+    margin-bottom: 10px;
+  }
+  .face-front .tap-hint {
+    font-size: 13px;
+    color: var(--mid-gray);
+  }
+
+  /* Back face */
+  .face-back {
+    transform: rotateY(180deg);
+    justify-content: flex-start;
+    overflow: hidden;
+    border-top: 5px solid var(--teal);
+  }
+  .back-cat-tag { margin-bottom: 14px; }
+
+  .section { margin-bottom: 12px; }
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--mid-gray);
+    margin-bottom: 4px;
+  }
+  .section-text {
+    font-size: 13.5px;
+    color: var(--navy);
+    line-height: 1.55;
+  }
+  .callout-box {
+    background: var(--ice);
+    border-left: 3px solid var(--teal);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--mid-gray);
+    line-height: 1.5;
+    font-style: italic;
+  }
+  .why-text {
+    font-size: 12.5px;
+    color: var(--mid-gray);
+    line-height: 1.5;
+  }
+
+  /* Category tags */
+  .cat-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+  }
+  .cat-instruction { background: #E6F7FA; color: #137996; }
+  .cat-assessment  { background: #EDECFC; color: #5B56B5; }
+  .cat-curriculum  { background: #E3F4F7; color: #0F6E56; }
+  .cat-student     { background: #FEF3E2; color: #92400E; }
+  .cat-tech        { background: #FDECEA; color: #B83A1A; }
+
+  /* ── Action buttons ──────────────────────────────────────── */
+  .actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .btn {
+    flex: 1;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px 10px;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn-learning {
+    background: #FEF3E2;
+    border-color: #F5C07A;
+    color: #92400E;
+  }
+  .btn-learning:hover { background: #FDE9C5; }
+  .btn-got {
+    background: #E1F5EE;
+    border-color: #6BCFA8;
+    color: #0F6E56;
+  }
+  .btn-got:hover { background: #C9EDE0; }
+
+  /* ── Nav row ─────────────────────────────────────────────── */
+  .nav-row {
+    display: flex;
+    gap: 10px;
+  }
+  .btn-nav {
+    flex: 1;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px;
+    border-radius: 10px;
+    border: 2px solid var(--border);
+    background: var(--white);
+    color: var(--navy);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn-nav:hover { border-color: var(--teal); color: var(--teal); }
+  .btn-nav.danger { color: var(--mid-gray); }
+  .btn-nav.danger:hover { color: #E8622A; border-color: #E8622A; }
+
+  /* ── Completion state ────────────────────────────────────── */
+  .complete-card {
+    background: var(--white);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    padding: 40px 28px;
+    text-align: center;
+    display: none;
+    border-top: 5px solid var(--navy);
+  }
+  .complete-card.visible { display: block; }
+  .complete-icon { font-size: 40px; margin-bottom: 16px; }
+  .complete-card h2 { font-size: 22px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+  .complete-card p  { font-size: 14px; color: var(--mid-gray); margin-bottom: 24px; }
+  .complete-stats {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+  .stat { text-align: center; }
+  .stat-num { font-size: 28px; font-weight: 700; color: var(--navy); }
+  .stat-label { font-size: 12px; color: var(--mid-gray); margin-top: 2px; }
+
+  /* ── Responsive ──────────────────────────────────────────── */
+  @media (max-width: 480px) {
+    body { padding: 20px 14px 40px; }
+    .face-front .term { font-size: 24px; }
+    .scene { height: 290px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-logo">
+      <!-- Simplified Moby eyes mark -->
+      <svg viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="10" cy="15" r="5" fill="white"/>
+        <circle cx="10" cy="15" r="2" fill="#1A3659"/>
+        <circle cx="20" cy="15" r="5" fill="white"/>
+        <circle cx="20" cy="15" r="2" fill="#1A3659"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <h1>Speak Teacher</h1>
+      <p>Ed jargon you'll hear on customer calls — explained without the jargon</p>
+    </div>
+  </div>
+
+  <!-- Category filters -->
+  <div class="filters" id="filters"></div>
+
+  <!-- Score row -->
+  <div class="score-row">
+    <div class="score-pill got"><div class="score-dot"></div><span id="got-count">0</span> got it</div>
+    <div class="score-pill learn"><div class="score-dot"></div><span id="learn-count">0</span> still learning</div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+  <div class="progress-label" id="prog-label">Card 1 of 0</div>
+
+  <!-- Flip hint -->
+  <div class="flip-hint">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5"/>
+    </svg>
+    Click the card to flip
+  </div>
+
+  <!-- Flashcard -->
+  <div class="scene" id="scene" onclick="flipCard()">
+    <div class="card" id="card">
+      <div class="face face-front">
+        <span class="cat-tag" id="front-tag"></span>
+        <div class="term" id="front-term">Loading…</div>
+        <div class="tap-hint">tap to see definition</div>
+      </div>
+      <div class="face face-back">
+        <span class="back-cat-tag" id="back-tag"></span>
+        <div class="section">
+          <div class="section-label">What it means</div>
+          <div class="section-text" id="back-def"></div>
+        </div>
+        <div class="section">
+          <div class="section-label">On a call, you might hear</div>
+          <div class="callout-box" id="back-callout"></div>
+        </div>
+        <div class="section">
+          <div class="section-label">Why it matters</div>
+          <div class="why-text" id="back-why"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Completion card (hidden until all cards done) -->
+  <div class="complete-card" id="complete-card">
+    <div class="complete-icon">🎉</div>
+    <h2>Deck complete!</h2>
+    <p>Here's how you did on this run.</p>
+    <div class="complete-stats">
+      <div class="stat"><div class="stat-num" id="final-got">0</div><div class="stat-label">Got it</div></div>
+      <div class="stat"><div class="stat-num" id="final-learn">0</div><div class="stat-label">Still learning</div></div>
+    </div>
+    <button class="btn btn-got" style="max-width:200px;margin:0 auto;" onclick="resetScores()">Go again</button>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="actions" id="actions">
+    <button class="btn btn-learning" onclick="markCard('learning')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0m9-4v8m-4-4h8"/></svg>
+      Still learning
+    </button>
+    <button class="btn btn-got" onclick="markCard('got')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+      Got it
+    </button>
+  </div>
+
+  <!-- Nav row -->
+  <div class="nav-row">
+    <button class="btn-nav" onclick="prevCard()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5m7-7-7 7 7 7"/></svg>
+      Back
+    </button>
+    <button class="btn-nav" onclick="shuffleDeck()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 18h1.4c1.8 0 3.3-1.3 3.6-3.1l.8-3.8c.3-1.8 1.8-3.1 3.6-3.1H22m0 0-3-3m3 3-3 3M2 6h1.4c1.8 0 3.3 1.3 3.6 3.1l.8 3.8c.3 1.8 1.8 3.1 3.6 3.1H22m0 0-3-3m3 3-3 3"/></svg>
+      Shuffle
+    </button>
+    <button class="btn-nav danger" onclick="resetScores()">Reset</button>
+  </div>
+
+</div>
+
+<script>
+const ALL_CARDS = [
+  { term: "Flipped classroom", category: "instruction", def: "Students watch video lessons at home, then come to class to do the work that used to be homework — practice, discussion, projects. The teacher's in-person time becomes about helping, not lecturing.", callout: '"We love using BrainPOP videos for homework so class time is hands-on."', why: "When a teacher flips their classroom, they need short, clear video content that works independently. BrainPOP is built for exactly this." },
+  { term: "PBL", category: "instruction", def: "Project-Based Learning. Students spend days or weeks on a real-world problem or question instead of moving through isolated lessons. The project IS the learning, not a wrap-up activity at the end.", callout: '"We do a lot of PBL so we need resources that connect to bigger themes, not just one-off topics."', why: "BrainPOP's topic breadth and cross-curricular connections make it a strong fit for PBL units." },
+  { term: "Student-driven inquiry", category: "student", def: "Students generate their own questions and investigate answers — they're not just answering a teacher's question. The teacher guides the process but doesn't dictate the destination.", callout: '"We want students asking the questions, not just receiving information."', why: "This signals a school that values student agency — lead with BrainPOP features like Make-a-Movie and Creative Coding, not just the videos." },
+  { term: "Scaffolding", category: "curriculum", def: "Temporary support built into a lesson — sentence starters, graphic organizers, hints — that helps students access something they couldn't do alone yet. Good scaffolding fades as students build skill.", callout: '"Our ELL students need a lot of scaffolding before they can access grade-level text."', why: "BrainPOP's multilevel reading options and built-in supports are a direct answer to this need." },
+  { term: "Differentiation", category: "curriculum", def: "Adjusting what students learn, how they learn it, or how they show what they know based on their individual needs. Not the same as giving some kids easier work — good differentiation keeps rigor high.", callout: '"I have 28 kids in one class and they\'re all at different reading levels."', why: "This is a core BrainPOP value prop. The more you understand what the teacher is already doing to differentiate, the better you can show how BrainPOP slots in." },
+  { term: "Formative assessment", category: "assessment", def: "Low-stakes checks during learning — exit tickets, quick polls, a show of hands — that help the teacher see who's getting it and who needs more support. Not graded. Used to adjust teaching, not evaluate students.", callout: '"I need something I can use to quickly check for understanding mid-lesson."', why: "BrainPOP's quizzes and assignment tools serve this directly. Position them as real-time insight, not tests." },
+  { term: "Summative assessment", category: "assessment", def: "End-of-unit or end-of-year evaluation — tests, projects, presentations — that measures what students learned. This is the graded stuff that goes in the gradebook.", callout: '"We use BrainPOP to prep for our state summative in the spring."', why: "Schools under pressure on test scores often use BrainPOP in review mode. Understand where the school is in the school year to frame the right use case." },
+  { term: "Growth vs. proficiency", category: "assessment", def: "Two different ways to measure student success. Proficiency asks: is the student at grade level? Growth asks: how much has the student improved, regardless of where they started? A student can show strong growth without being proficient yet — and a high-performing student can be proficient but show little growth.", callout: '"Our principal cares more about growth than proficiency scores — we have a lot of ground to make up."', why: "This shapes how a school talks about success and what data they pay attention to. If they're growth-focused, lead with engagement and usage trends over time, not just feature lists." },
+  { term: "Standards-aligned", category: "curriculum", def: "Content that directly maps to official learning standards (like Common Core, NGSS, or state standards). Teachers are accountable for teaching what's in the standards — misaligned resources waste their time.", callout: '"Everything we purchase has to be aligned to our state standards."', why: "Never assume they know BrainPOP is standards-aligned. Say it explicitly and offer to show them how it maps." },
+  { term: "Vertical alignment", category: "curriculum", def: "Making sure what students learn in 3rd grade logically builds toward what they'll learn in 5th grade and beyond. A school with strong vertical alignment planned it intentionally.", callout: '"We\'re trying to make sure our K-8 teachers are all building on the same foundation."', why: "This is a district-level conversation. If you're talking to a district CSM, this is a signal to connect BrainPOP to their curriculum map." },
+  { term: "Benchmark assessment", category: "assessment", def: "Periodic assessments (usually 3x a year) that track student progress against grade-level expectations. Different from both formative (daily) and summative (end-of-unit) — benchmarks are checkpoints across the year.", callout: '"We give benchmarks in September, January, and May."', why: "Schools use benchmark data to adjust instruction mid-year. BrainPOP can support the instructional response to benchmark results." },
+  { term: "Scope and sequence", category: "curriculum", def: "The plan for what gets taught and in what order. Scope = all the topics and skills covered across a course or grade level. Sequence = the order they're taught in. A school's scope and sequence is essentially their curriculum roadmap for the year.", callout: '"We have a pretty tight scope and sequence — teachers don\'t have a lot of flexibility to go off-plan."', why: "If a school has a rigid scope and sequence, BrainPOP needs to fit within it, not around it. Ask what units are coming up so you can show how specific topics map directly to their plan." },
+  { term: "MLLs / ELLs", category: "student", def: "Multilingual Learners or English Language Learners. Students who are learning English while also learning academic content. A single classroom might have kids across a wide range of English proficiency levels.", callout: '"About 40% of our school are MLLs — we really need Spanish support."', why: "BrainPOP's Spanish-language content (BrainPOP Español) is a direct answer here. Know which subscription tiers include it." },
+  { term: "Tier 1 / Tier 2 / Tier 3 support", category: "student", def: "A tiered intervention model. Tier 1 = strong instruction for all students. Tier 2 = small-group support for students who need more. Tier 3 = intensive, individualized support for students significantly behind.", callout: '"Most of our BrainPOP usage is Tier 1, but we want to use it more for Tier 2 groups."', why: "This tells you who they're targeting and how they're using the tool. Tier 2 usage often means small groups with a teacher — ask about that workflow." },
+  { term: "IEP", category: "student", def: "Individualized Education Program. A legal document for students with disabilities that outlines specific learning goals and the accommodations or services they're entitled to.", callout: '"We have a lot of students with IEPs who need text-to-speech and simplified content."', why: "Accommodation features in BrainPOP (audio, leveled reading) matter a lot for these students. Know what's available." },
+  { term: "MTSS", category: "student", def: "Multi-Tiered System of Supports. A schoolwide framework for identifying students who need more help and delivering the right level of support — academic, behavioral, or social-emotional. Think of it as the organizing system that sits above Tier 1/2/3 intervention and coordinates all the moving parts.", callout: '"We\'re in the middle of rolling out MTSS across our whole district."', why: "MTSS is usually a district-level initiative with a coordinator or team behind it. If you hear this, it's a signal to ask who owns it — that person often influences how supplemental tools get deployed and funded." },
+  { term: "Whole-group instruction", category: "instruction", def: "The teacher teaches the full class at once — classic front-of-room teaching. Still the most common instructional format, especially for introducing new concepts.", callout: '"I use BrainPOP on the SmartBoard during whole-group to kick off a unit."', why: "This is the most common use case — and a good discovery angle is what happens after the whole-group video. Do teachers follow up with activities?" },
+  { term: "Station rotation", category: "instruction", def: "A blended learning model where students rotate through different learning stations on a schedule — one might be a teacher-led group, one independent practice, one technology-based. Each student moves through all stations.", callout: '"We do stations and I always have one tech station — that\'s usually BrainPOP."', why: "This is a specific, high-value use case. If they're doing stations, BrainPOP is competing for that one tech slot — know what else is in the rotation." },
+  { term: "Blended learning", category: "instruction", def: "A mix of in-person teaching and digital learning where students have some control over pace, place, or path. Station rotation is one model. Not just 'using technology' — there's an intentional structure.", callout: '"We\'re trying to move toward a more blended model this year."', why: "This is often a school-level initiative coming from admin. If a teacher says this, ask who's driving it — that's usually a good signal about where decisions are being made." },
+  { term: "Direct instruction", category: "instruction", def: "A structured, teacher-led approach where the teacher explicitly teaches a skill or concept step by step, checks for understanding frequently, and gradually releases responsibility to students. Very systematic, especially common in literacy and math.", callout: '"Our curriculum is very direct instruction — I need resources that fit that model, not open-ended discovery."', why: "Schools with a direct instruction focus need content that fits a structured sequence. Frame BrainPOP as a support resource, not a replacement curriculum." },
+  { term: "Gradual release", category: "instruction", def: "The I Do / We Do / You Do model. Teacher demonstrates (I Do), class practices together (We Do), students work independently (You Do). A framework for moving students toward independence.", callout: '"We structure all our lessons with gradual release."', why: "This should sound familiar — it's the same model BrainPOP's PD and your training uses. BrainPOP videos = I Do; interactive activities = We Do; Make-a-Movie or assignments = You Do." },
+  { term: "Cross-curricular connections", category: "curriculum", def: "Intentionally linking learning across subjects — connecting a science concept to a related piece of historical context, for example. Schools that prioritize this are looking for resources that don't silo content.", callout: '"We want to stop teaching subjects in silos and make more connections across content areas."', why: "BrainPOP's breadth across subjects is a genuine differentiator here. This is a signal to highlight how topics link across the content library." },
+  { term: "HQIM", category: "curriculum", def: "High-Quality Instructional Materials. Curriculum resources — textbooks, units, programs — that have been reviewed and rated as effective based on evidence. HQIM typically refers to core curriculum, not supplemental tools. BrainPOP is not classified as HQIM because we're a supplemental resource, not a core curriculum.", callout: '"We only budget for HQIM-rated resources, so BrainPOP would have to come from a different line."', why: "Knowing this term prevents a costly mistake. If a customer says they only purchase HQIM, don't push back — understand their budget structure and identify where BrainPOP fits as a supplement alongside their core." },
+  { term: "UDL", category: "curriculum", def: "Universal Design for Learning. A framework for designing lessons that work for all learners from the start — not retrofitted for students with different needs, but built flexible from the beginning. It focuses on giving students multiple ways to access content, engage with it, and show what they know.", callout: '"We have a UDL initiative this year — we need tools that support multiple means of representation."', why: "BrainPOP supports UDL principles well — video, text, audio, interactive activities, and creative output give students multiple pathways. Know the language so you can connect the dots for the customer." },
+  { term: "LMS", category: "tech", def: "Learning Management System. The platform schools use to assign work, host resources, communicate with students, and track grades. Common examples: Google Classroom, Canvas, Schoology, Clever.", callout: '"Everything has to be accessible through our LMS — we use Canvas."', why: "BrainPOP integrates with major LMS platforms. Know the key integrations and be ready to address any friction around single sign-on." },
+  { term: "Asynchronous learning", category: "instruction", def: "Learning that doesn't happen in real time — students watch a video, complete a task, or read on their own schedule. Opposite of synchronous (live, real-time). Common in hybrid or remote learning setups.", callout: '"We still have some students doing asynchronous work at home."', why: "BrainPOP content works well async. If a school has hybrid learners, lead with flexibility as a feature." },
+  { term: "Student agency", category: "student", def: "Students have real choice and ownership over their learning — what they study, how they show what they know, or how they move through content. It's not just letting kids pick their seat. True agency means students are active participants in decisions that affect their learning.", callout: '"We want students to own their learning journey, not just follow a script."', why: "Schools that talk about agency are looking for tools that flex around the learner, not just deliver content. BrainPOP's Make-a-Movie, Creative Coding, and topic exploration features support student-directed learning. Lead with those, not just the videos." },
+  { term: "Genius Hour", category: "instruction", def: "Dedicated class time — often one period a week — where students pursue a passion project or self-chosen topic. Based loosely on Google's '20% time' concept. The teacher facilitates, but the student picks the question and drives the work.", callout: '"We do Genius Hour every Friday — kids are all over the place with topics."', why: "This is a high-agency, high-variety use case. BrainPOP's broad topic library is genuinely useful here because students can go deep on almost anything. It's also a good signal that the teacher values student ownership — adjust your framing accordingly." },
+];
+
+const CATEGORIES = {
+  instruction: { label: "Instructional models", cls: "cat-instruction" },
+  assessment:  { label: "Assessment",           cls: "cat-assessment"  },
+  curriculum:  { label: "Curriculum",           cls: "cat-curriculum"  },
+  student:     { label: "Student needs",        cls: "cat-student"     },
+  tech:        { label: "Technology",           cls: "cat-tech"        },
+};
+
+let deck = [];
+let idx = 0;
+let flipped = false;
+let scores = {};
+let activeCategory = "all";
+
+function buildDeck() {
+  deck = (activeCategory === "all"
+    ? ALL_CARDS
+    : ALL_CARDS.filter(c => c.category === activeCategory)
+  ).map((c, i) => ({ ...c, _id: i }));
+}
+
+function shuffle() {
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+}
+
+function tagHTML(cat) {
+  const { label, cls } = CATEGORIES[cat];
+  return `<span class="cat-tag ${cls}">${label}</span>`;
+}
+
+function showCard() {
+  if (deck.length === 0) return;
+  const c = deck[idx];
+  document.getElementById("front-tag").innerHTML = tagHTML(c.category);
+  document.getElementById("back-tag").innerHTML  = tagHTML(c.category);
+  document.getElementById("front-term").textContent   = c.term;
+  document.getElementById("back-def").textContent     = c.def;
+  document.getElementById("back-callout").textContent = c.callout;
+  document.getElementById("back-why").textContent     = c.why;
+  document.getElementById("prog-label").textContent   = `Card ${idx + 1} of ${deck.length}`;
+  document.getElementById("prog-fill").style.width    = `${((idx + 1) / deck.length) * 100}%`;
+  updateScores();
+}
+
+function flipCard() {
+  flipped = !flipped;
+  document.getElementById("card").classList.toggle("flipped", flipped);
+}
+
+function markCard(type) {
+  if (!flipped) { flipCard(); return; }
+  const c = deck[idx];
+  scores[c.term] = type;
+  updateScores();
+  setTimeout(() => {
+    if (idx < deck.length - 1) {
+      idx++;
+      unflip();
+      showCard();
+    } else {
+      showComplete();
+    }
+  }, 300);
+}
+
+function prevCard() {
+  if (idx > 0) { idx--; unflip(); showCard(); }
+}
+
+function unflip() {
+  flipped = false;
+  document.getElementById("card").classList.remove("flipped");
+}
+
+function updateScores() {
+  const got    = Object.values(scores).filter(v => v === "got").length;
+  const learn  = Object.values(scores).filter(v => v === "learning").length;
+  document.getElementById("got-count").textContent   = got;
+  document.getElementById("learn-count").textContent = learn;
+}
+
+function showComplete() {
+  document.getElementById("scene").style.display   = "none";
+  document.getElementById("actions").style.display = "none";
+  const got   = Object.values(scores).filter(v => v === "got").length;
+  const learn = Object.values(scores).filter(v => v === "learning").length;
+  document.getElementById("final-got").textContent   = got;
+  document.getElementById("final-learn").textContent = learn;
+  document.getElementById("complete-card").classList.add("visible");
+}
+
+function shuffleDeck() {
+  shuffle();
+  idx = 0;
+  unflip();
+  scores = {};
+  updateScores();
+  document.getElementById("scene").style.display   = "";
+  document.getElementById("actions").style.display = "";
+  document.getElementById("complete-card").classList.remove("visible");
+  showCard();
+}
+
+function resetScores() {
+  scores = {};
+  idx = 0;
+  unflip();
+  updateScores();
+  document.getElementById("scene").style.display   = "";
+  document.getElementById("actions").style.display = "";
+  document.getElementById("complete-card").classList.remove("visible");
+  showCard();
+}
+
+function setCategory(cat, btn) {
+  activeCategory = cat;
+  document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  buildDeck();
+  shuffle();
+  idx = 0;
+  unflip();
+  scores = {};
+  updateScores();
+  document.getElementById("scene").style.display   = "";
+  document.getElementById("actions").style.display = "";
+  document.getElementById("complete-card").classList.remove("visible");
+  showCard();
+}
+
+function buildFilters() {
+  const container = document.getElementById("filters");
+  const allBtn = document.createElement("button");
+  allBtn.className = "filter-btn active";
+  allBtn.textContent = "All terms";
+  allBtn.onclick = () => setCategory("all", allBtn);
+  container.appendChild(allBtn);
+  Object.entries(CATEGORIES).forEach(([key, val]) => {
+    const btn = document.createElement("button");
+    btn.className = "filter-btn";
+    btn.textContent = val.label;
+    btn.onclick = () => setCategory(key, btn);
+    container.appendChild(btn);
+  });
+}
+
+// Init
+buildFilters();
+buildDeck();
+shuffle();
+showCard();
+</script>
+</body>
+</html>
